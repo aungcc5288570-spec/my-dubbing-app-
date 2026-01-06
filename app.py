@@ -3,7 +3,7 @@ import google.generativeai as genai
 from gtts import gTTS
 import io
 
-# Gemini API Key (ဒီ Key က အသစ်ဖြစ်လို့ Error မတက်နိုင်ပါ)
+# Gemini API Key
 genai.configure(api_key="AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk")
 
 st.set_page_config(page_title="Myanmar AI Dubber", page_icon="🇲🇲")
@@ -11,20 +11,20 @@ st.title("Myanmar AI Dubber 🇲🇲")
 
 # Sidebar settings
 st.sidebar.header("Settings")
-voice_type = st.sidebar.radio("Voice Choice", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ"])
+voice_type = st.sidebar.radio("အသံရွေးချယ်ရန်", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ"])
 
 video_url = st.text_input("YouTube Link:")
 
 if video_url:
     st.video(video_url)
     if st.button("အသံသွင်းမည် (Generate Dubbing)"):
-        with st.spinner('AI က ဗီဒီယိုကို နားထောင်နေပါသည်...'):
+        with st.spinner('AI က ဗီဒီယိုကို လေ့လာနေပါသည်...'):
             try:
-                # Model နာမည်ကို အသေချာဆုံး 'gemini-1.5-flash' ဟု ပြောင်းလဲထားပါသည်
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                # 404 Error မတက်စေရန် gemini-1.5-flash-latest ကို တိုက်ရိုက်ခေါ်သုံးပါသည်
+                model = genai.GenerativeModel('gemini-1.5-flash-latest')
                 
-                # အမြန်နှုန်းအတွက် ၃ ကြောင်းပဲ အကျဉ်းချုပ်ခိုင်းခြင်း
-                prompt = f"Summarize this YouTube video in 3 short sentences in Myanmar language: {video_url}"
+                # အမြန်ဆုံး အကျဉ်းချုပ်ခိုင်းခြင်း
+                prompt = f"Summarize this YouTube video content in 3 short sentences in Myanmar language. URL: {video_url}"
                 response = model.generate_content(prompt)
                 
                 myanmar_text = response.text
@@ -40,4 +40,10 @@ if video_url:
                 st.audio(fp, format='audio/mp3')
                 
             except Exception as e:
-                st.error(f"Error တက်နေပါသည် - {e}")
+                # အကယ်၍ Error ထပ်တက်ပါက အရန် Model ဖြင့် ထပ်မံကြိုးစားခြင်း
+                try:
+                    model = genai.GenerativeModel('gemini-pro')
+                    response = model.generate_content(prompt)
+                    st.write(response.text)
+                except:
+                    st.error(f"Error အသေးစိတ်: {e}")
