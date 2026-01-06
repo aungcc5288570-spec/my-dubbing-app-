@@ -6,33 +6,33 @@ import io
 # Gemini API Key
 genai.configure(api_key="AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk")
 
-st.set_page_config(page_title="Myanmar AI Dubber", page_icon="🇲🇲")
-st.title("Myanmar AI Dubber 🇲🇲")
+st.set_page_config(page_title="Gemini Pro Dubbing", page_icon="✨")
+st.title("Gemini Pro AI Dubbing 🇲🇲")
 
 # Sidebar settings
-st.sidebar.header("Settings")
-voice_type = st.sidebar.radio("အသံရွေးချယ်ရန်", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ"])
+st.sidebar.header("Dubbing Settings")
+voice_choice = st.sidebar.radio("အသံရွေးချယ်ရန်", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ"])
 
-video_url = st.text_input("YouTube Link:")
+video_url = st.text_input("YouTube Link ကို ဒီမှာ ထည့်ပါ -")
 
 if video_url:
     st.video(video_url)
-    if st.button("အသံသွင်းမည် (Generate Dubbing)"):
-        with st.spinner('AI က ဗီဒီယိုကို လေ့လာနေပါသည်...'):
+    if st.button("Gemini Pro ဖြင့် ဘာသာပြန်မည်"):
+        with st.spinner('Gemini Pro က ဗီဒီယိုကို လေ့လာနေပါသည်...'):
             try:
-                # 404 Error မတက်စေရန် gemini-1.5-flash-latest ကို တိုက်ရိုက်ခေါ်သုံးပါသည်
-                model = genai.GenerativeModel('gemini-1.5-flash-latest')
+                # အတည်ငြိမ်ဆုံးဖြစ်သော gemini-pro model ကို သုံးထားပါသည်
+                model = genai.GenerativeModel('gemini-pro')
                 
                 # အမြန်ဆုံး အကျဉ်းချုပ်ခိုင်းခြင်း
-                prompt = f"Summarize this YouTube video content in 3 short sentences in Myanmar language. URL: {video_url}"
+                prompt = f"Please summarize this YouTube video content briefly in 3 Myanmar sentences. URL: {video_url}"
                 response = model.generate_content(prompt)
                 
                 myanmar_text = response.text
-                st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
+                st.success("Gemini Pro ဖြင့် ဘာသာပြန်ခြင်း အောင်မြင်သည်!")
                 st.write(myanmar_text)
                 
                 # အသံထုတ်လုပ်ခြင်း
-                is_slow = True if voice_type == "ယောကျ်ားလေးအသံ" else False
+                is_slow = True if voice_choice == "ယောကျ်ားလေးအသံ" else False
                 tts = gTTS(text=myanmar_text, lang='my', slow=is_slow)
                 
                 fp = io.BytesIO()
@@ -40,10 +40,4 @@ if video_url:
                 st.audio(fp, format='audio/mp3')
                 
             except Exception as e:
-                # အကယ်၍ Error ထပ်တက်ပါက အရန် Model ဖြင့် ထပ်မံကြိုးစားခြင်း
-                try:
-                    model = genai.GenerativeModel('gemini-pro')
-                    response = model.generate_content(prompt)
-                    st.write(response.text)
-                except:
-                    st.error(f"Error အသေးစိတ်: {e}")
+                st.error(f"Error: {e}")
