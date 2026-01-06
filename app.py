@@ -18,17 +18,17 @@ video_url = st.text_input("YouTube Link ကို ဒီမှာ ထည့်�
 if video_url:
     st.video(video_url)
     if st.button("Gemini Pro ဖြင့် ဘာသာပြန်မည်"):
-        with st.spinner('Gemini Pro က ဗီဒီယိုကို လေ့လာနေပါသည်...'):
+        with st.spinner('Gemini Pro က အလုပ်လုပ်နေပါသည်...'):
             try:
-                # အတည်ငြိမ်ဆုံးဖြစ်သော gemini-pro model ကို သုံးထားပါသည်
+                # Error လုံးဝမတက်စေရန် model name ကို string သီးသန့်ပဲ သုံးပါမည်
                 model = genai.GenerativeModel('gemini-pro')
                 
                 # အမြန်ဆုံး အကျဉ်းချုပ်ခိုင်းခြင်း
-                prompt = f"Please summarize this YouTube video content briefly in 3 Myanmar sentences. URL: {video_url}"
+                prompt = f"Summarize this YouTube video in 3 sentences in Myanmar language. URL: {video_url}"
                 response = model.generate_content(prompt)
                 
                 myanmar_text = response.text
-                st.success("Gemini Pro ဖြင့် ဘာသာပြန်ခြင်း အောင်မြင်သည်!")
+                st.success("ဘာသာပြန်ခြင်း အောင်မြင်သည်!")
                 st.write(myanmar_text)
                 
                 # အသံထုတ်လုပ်ခြင်း
@@ -40,4 +40,5 @@ if video_url:
                 st.audio(fp, format='audio/mp3')
                 
             except Exception as e:
-                st.error(f"Error: {e}")
+                # Error အသေးစိတ်ကို သေချာပြရန်
+                st.error(f"Error အသေးစိတ်: {str(e)}")
