@@ -6,49 +6,40 @@ import io
 # Gemini API Key
 genai.configure(api_key="AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk")
 
-st.set_page_config(page_title="AI Myanmar Dubbing", page_icon="🎙️")
-st.title("AI Myanmar Auto Dubbing 🇲🇲")
+st.set_page_config(page_title="Fast AI Dubbing", page_icon="⚡")
+st.title("Fast Myanmar AI Dubbing 🇲🇲⚡")
 
-# အသံဆက်တင်များ (Sidebar)
-st.sidebar.header("အသံရွေးချယ်မှု")
-voice_option = st.sidebar.radio("အသံအမျိုးအစား", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ (Slow)"])
-voice_speed = st.sidebar.slider("အသံနှုန်း (Speed)", 0.8, 1.2, 1.0)
+# အမြန်နှုန်းအတွက် Sidebar ဆက်တင်များ
+st.sidebar.header("Dubbing Settings")
+voice_choice = st.sidebar.selectbox("အသံရွေးချယ်ရန်", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ"])
+speed_val = st.sidebar.slider("အသံနှုန်း (Speed)", 0.9, 1.3, 1.1)
 
-st.markdown("### YouTube Link ထည့်ပြီး မြန်မာလို နားထောင်မည်")
 video_url = st.text_input("YouTube Link ကို ဒီမှာ ထည့်ပါ -")
 
 if video_url:
     st.video(video_url)
-    if st.button("AI ဖြင့် အလိုအလျောက် ဘာသာပြန်မည်"):
-        with st.spinner('AI က ဗီဒီယိုကို လေ့လာနေပါသည်...'):
+    if st.button("အမြန်နှုန်းဖြင့် ဘာသာပြန်မည်"):
+        # အချိန်တိုအတွင်း အလုပ်လုပ်ရန် spinner သုံးခြင်း
+        with st.spinner('AI က စက္ကန့်ပိုင်းအတွင်း အကျဉ်းချုပ်နေပါသည်...'):
             try:
-                # 404 Error ကင်းဝေးစေရန် model နာမည်ကို ပြောင်းလဲထားပါသည်
-                model = genai.GenerativeModel('gemini-1.5-flash-8b')
+                # အမြန်ဆုံးဖြစ်သော gemini-1.5-flash model ကို သုံးထားပါသည်
+                model = genai.GenerativeModel('gemini-1.5-flash')
                 
-                response = model.generate_content([
-                    "Summarize this video in Myanmar language briefly.",
-                    video_url
-                ])
+                # အမြန်ဆုံး အကျဉ်းချုပ်ခိုင်းသည့် Prompt
+                prompt = f"Summarize this YouTube video content in 3 short sentences in Myanmar language. Link: {video_url}"
+                response = model.generate_content(prompt)
                 
                 myanmar_text = response.text
-                st.subheader("မြန်မာဘာသာပြန် စာသား -")
-                st.success(myanmar_text)
+                st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
+                st.write(myanmar_text)
                 
-                # အသံအမျိုးအစားအလိုက် ပြောင်းလဲခြင်း
-                is_slow = True if voice_option == "ယောကျ်ားလေးအသံ (Slow)" else False
+                # အသံဖိုင်ကို အမြန်ထုတ်လုပ်ခြင်း
+                is_slow = True if voice_choice == "ယောကျ်ားလေးအသံ" else False
                 tts = gTTS(text=myanmar_text, lang='my', slow=is_slow)
                 
                 fp = io.BytesIO()
                 tts.write_to_fp(fp)
-                
-                st.markdown(f"### {voice_option} ဖြင့် နားထောင်ရန် -")
                 st.audio(fp, format='audio/mp3')
                 
             except Exception as e:
-                # Error ထပ်တက်ပါက တခြား model တစ်ခုဖြင့် ထပ်စမ်းခြင်း
-                st.info("Model အပြောင်းအလဲ လုပ်နေပါသည်...")
-                try:
-                    model = genai.GenerativeModel('gemini-pro')
-                    # ... (ကျန်တဲ့ code အတူတူပင်)
-                except:
-                    st.error(f"Error: {e}")
+                st.error(f"Error: {e}")
