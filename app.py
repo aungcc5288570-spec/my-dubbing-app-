@@ -3,37 +3,35 @@ import google.generativeai as genai
 from gtts import gTTS
 import io
 
-# Gemini API Key
+# Gemini API Key (API Key ကို သေချာစစ်ဆေးပေးပါ)
 genai.configure(api_key="AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk")
 
 st.set_page_config(page_title="Fast AI Dubbing", page_icon="⚡")
 st.title("Fast Myanmar AI Dubbing 🇲🇲⚡")
 
-# အမြန်နှုန်းအတွက် Sidebar ဆက်တင်များ
+# Sidebar settings
 st.sidebar.header("Dubbing Settings")
 voice_choice = st.sidebar.selectbox("အသံရွေးချယ်ရန်", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ"])
-speed_val = st.sidebar.slider("အသံနှုန်း (Speed)", 0.9, 1.3, 1.1)
 
 video_url = st.text_input("YouTube Link ကို ဒီမှာ ထည့်ပါ -")
 
 if video_url:
     st.video(video_url)
     if st.button("အမြန်နှုန်းဖြင့် ဘာသာပြန်မည်"):
-        # အချိန်တိုအတွင်း အလုပ်လုပ်ရန် spinner သုံးခြင်း
         with st.spinner('AI က စက္ကန့်ပိုင်းအတွင်း အကျဉ်းချုပ်နေပါသည်...'):
             try:
-                # အမြန်ဆုံးဖြစ်သော gemini-1.5-flash model ကို သုံးထားပါသည်
+                # 404 Error ကင်းဝေးရန် Model နာမည်ကို 'gemini-1.5-flash' ဟုသာ ရေးပါသည်
                 model = genai.GenerativeModel('gemini-1.5-flash')
                 
-                # အမြန်ဆုံး အကျဉ်းချုပ်ခိုင်းသည့် Prompt
-                prompt = f"Summarize this YouTube video content in 3 short sentences in Myanmar language. Link: {video_url}"
+                # အမြန်ဆုံး အကျဉ်းချုပ်ခိုင်းခြင်း
+                prompt = f"Please provide a very short summary of this video in Myanmar language (3-4 sentences). Video link: {video_url}"
                 response = model.generate_content(prompt)
                 
                 myanmar_text = response.text
                 st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
                 st.write(myanmar_text)
                 
-                # အသံဖိုင်ကို အမြန်ထုတ်လုပ်ခြင်း
+                # အသံထုတ်လုပ်ခြင်း
                 is_slow = True if voice_choice == "ယောကျ်ားလေးအသံ" else False
                 tts = gTTS(text=myanmar_text, lang='my', slow=is_slow)
                 
@@ -42,4 +40,10 @@ if video_url:
                 st.audio(fp, format='audio/mp3')
                 
             except Exception as e:
-                st.error(f"Error: {e}")
+                # Error ထပ်တက်ပါက အခြား model (gemini-pro) ဖြင့် အလိုအလျောက် ပြောင်းစမ်းပါမည်
+                try:
+                    model = genai.GenerativeModel('gemini-pro')
+                    response = model.generate_content(prompt)
+                    st.write(response.text)
+                except:
+                    st.error(f"Error: {e}")
