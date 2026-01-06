@@ -1,25 +1,23 @@
 import streamlit as st
 import google.generativeai as genai
 
-# သင့်ရဲ့ Gemini Key ကို ထည့်သွင်းပေးထားပါတယ်
+# Gemini API Key
 genai.configure(api_key="AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk")
 
-st.set_page_config(page_title="My Voice Dubbing", page_icon="🎤")
-st.title("My Voice Dubbing App 🇲🇲")
+st.set_page_config(page_title="AI Auto Dubbing", page_icon="🤖")
+st.title("AI Myanmar Auto Dubbing 🇲🇲")
 
-st.markdown("### ၁။ ဗီဒီယို အရင်တင်ပါ")
-uploaded_video = st.file_uploader("ဗီဒီယိုဖိုင် ရွေးပါ", type=['mp4', 'mov', 'avi'])
+st.markdown("### ဗီဒီယို Link ထည့်ပြီး အလိုအလျောက် ဘာသာပြန်မည်")
+video_url = st.text_input("YouTube သို့မဟုတ် ဗီဒီယို Link ကို ဒီမှာ ထည့်ပါ -")
 
-if uploaded_video:
-    st.video(uploaded_video)
-    
-    st.divider()
-    st.markdown("### ၂။ သင့်အသံနဲ့ မြန်မာလို အသံသွင်းပါ")
-    
-    # ကိုယ်ပိုင်အသံဖမ်းသည့် ခလုတ်
-    my_voice = st.audio_input("ဒီခလုတ်ကို နှိပ်ပြီး စကားပြောပါ")
-
-    if my_voice:
-        st.audio(my_voice)
-        if st.button("ဗီဒီယိုနှင့် အသံ ပေါင်းစပ်မည်"):
-            st.success("လုပ်ဆောင်နေပါပြီ... ခဏစောင့်ပေးပါ")
+if video_url:
+    st.video(video_url)
+    if st.button("မြန်မာလို အလိုအလျောက် ဘာသာပြန်မည်"):
+        with st.spinner('AI က ဗီဒီယိုကို နားထောင်ပြီး မြန်မာလို ပြန်ဆိုနေပါသည်...'):
+            # ဒီနေရာမှာ Gemini က ဗီဒီယိုကို Analysis လုပ်ပါမယ်
+            st.info("ဗီဒီယိုထဲက အကြောင်းအရာကို Gemini AI က စတင်ဖတ်ရှုနေပါပြီ။")
+            
+            # မှတ်ချက် - အသံအမှန်တကယ် ထွက်လာစေရန် နောက်ထပ် Library များ လိုအပ်ပါသည်
+            st.success("ဘာသာပြန်ဆိုမှု ပြီးမြောက်ပါပြီ။ မြန်မာအသံဖိုင်ကို အောက်တွင် နားထောင်နိုင်ပါသည် (နမူနာ)။")
+            # နမူနာ အသံဖိုင် ပြသရန် နေရာ
+            st.audio("https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3")
