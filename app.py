@@ -17,18 +17,26 @@ if video_url:
     if st.button("AI ဖြင့် အလိုအလျောက် ဘာသာပြန်မည်"):
         with st.spinner('AI က ဗီဒီယိုကို လေ့လာပြီး မြန်မာလို ပြန်ဆိုနေပါသည်...'):
             try:
-                # model name ကို gemini-pro-vision သို့မဟုတ် gemini-1.5-flash-latest ပြောင်းထားသည်
-                model = genai.GenerativeModel('gemini-1.5-flash-latest')
-                response = model.generate_content(["Summarize this video in Myanmar language shortly.", video_url])
+                # Model နာမည်ကို gemini-1.5-flash ဟုသာ အတိအကျ သုံးထားပါသည်
+                model = genai.GenerativeModel(model_name="gemini-1.5-flash")
+                
+                # Prompt ကို ပိုမိုရှင်းလင်းစွာ ပြင်ဆင်ထားပါသည်
+                response = model.generate_content([
+                    "Summarize this video content in Myanmar language professionally and briefly.",
+                    video_url
+                ])
                 
                 myanmar_text = response.text
                 st.subheader("မြန်မာဘာသာပြန် စာသား -")
                 st.success(myanmar_text)
                 
+                # အသံထွက်ရန် ပြောင်းလဲခြင်း
                 tts = gTTS(text=myanmar_text, lang='my')
                 fp = io.BytesIO()
                 tts.write_to_fp(fp)
                 st.markdown("### မြန်မာ AI အသံဖြင့် နားထောင်ရန် -")
                 st.audio(fp, format='audio/mp3')
+                
             except Exception as e:
-                st.error(f"အမှားတစ်ခုရှိနေပါသည် - {e}")
+                # Error အသေးစိတ်ကို သိရှိရန် ပြင်ဆင်ထားခြင်း
+                st.error(f"Error တက်ရခြင်း အကြောင်းရင်း - {e}")
