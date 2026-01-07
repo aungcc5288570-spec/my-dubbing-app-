@@ -1,84 +1,107 @@
 import streamlit as st
 import google.generativeai as genai
 from gtts import gTTS
-import io
-import smtplib
-import random
+import io, time, smtplib, random
 from email.mime.text import MIMEText
 
-# --- ၁။ Configuration (သင့်အချက်အလက်များကို အသေထည့်သွင်းပေးထားပါသည်) ---
+# --- ၁။ Configuration ---
 GENAI_API_KEY = "AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk"
-SENDER_EMAIL = "cc3499395@gmail.com"  # သင့် Gmail
-APP_PASSWORD = "spnv vmqu okhg lkrf"   # သင့် App Password အသစ်
+SENDER_EMAIL = "cc3499395@gmail.com" 
+APP_PASSWORD = "spnv vmqu okhg lkrf" # သင့် Password
 
 genai.configure(api_key=GENAI_API_KEY)
 model = genai.GenerativeModel('gemini-pro')
 
-# --- ၂။ Functions (OTP ပို့ရန်) ---
-def send_otp_email(receiver_email, otp_code):
-    # Password Space များကို ဖယ်ရှားခြင်း
-    formatted_pwd = APP_PASSWORD.replace(" ", "")
-    msg = MIMEText(f"မင်္ဂလာပါ၊ MovieX Pro သို့ဝင်ရန် သင်၏ Verification Code မှာ {otp_code} ဖြစ်ပါသည်။")
-    msg['Subject'] = 'MovieX OTP Code'
+# --- ၂။ Custom CSS (TeamAlpha UI Style) ---
+st.markdown("""
+<style>
+    .main { background-color: #0e1117; color: white; }
+    .stButton>button { background-color: #7e3ff2; color: white; border-radius: 10px; width: 100%; }
+    .plan-card { background-color: #1a1c24; border-radius: 15px; padding: 20px; border: 1px solid #3e424b; }
+    .metric-container { background: radial-gradient(circle, #2a0a4a 0%, #0e1117 100%); border-radius: 50%; padding: 30px; text-align: center; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- ၃။ Helper Functions ---
+def send_otp(email, otp):
+    pwd = APP_PASSWORD.replace(" ", "")
+    msg = MIMEText(f"MovieX Login Code: {otp}")
+    msg['Subject'] = 'MovieX Verification'
     msg['From'] = SENDER_EMAIL
-    msg['To'] = receiver_email
+    msg['To'] = email
     try:
         server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
-        server.login(SENDER_EMAIL, formatted_pwd)
-        server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
-        server.quit()
+        server.login(SENDER_EMAIL, pwd); server.sendmail(SENDER_EMAIL, email, msg.as_string()); server.quit()
         return True
     except: return False
 
-# --- ၃။ User Interface & Login ---
-st.set_page_config(page_title="MovieX Recap Pro", layout="wide")
-
+# --- ၄။ Login & Sidebar Menu ---
 if "logged_in" not in st.session_state:
     st.title("🎬 MovieX Premium Login")
-    user_email = st.text_input("သင့် Gmail ကို ရိုက်ထည့်ပါ", placeholder="example@gmail.com")
-    
-    if st.button("Get OTP Code"):
-        if user_email:
-            otp = random.randint(100000, 999999)
-            st.session_state.gen_otp = str(otp)
-            if send_otp_email(user_email, otp):
-                st.session_state.otp_sent = True
-                st.session_state.target_email = user_email
-                st.success("Code ပို့ပြီးပါပြီ။ Gmail ကို စစ်ဆေးပါ။")
-            else: st.error("Email ပို့မရပါ။ စနစ်ကို ခေတ္တစောင့်ပြီး ပြန်ကြိုးစားပါ။")
-
+    u_email = st.text_input("Gmail")
+    if st.button("Get OTP"):
+        otp = random.randint(100000, 999999)
+        st.session_state.gen_otp = str(otp)
+        if send_otp(u_email, otp): st.session_state.otp_sent = True; st.success("Code Sent!")
     if st.session_state.get("otp_sent"):
-        input_otp = st.text_input("OTP ၆ လုံး ရိုက်ထည့်ပါ", type="password")
-        if st.button("Verify & Start"):
-            if input_otp == st.session_state.gen_otp:
-                st.session_state.logged_in = True
-                st.session_state.user = st.session_state.target_email
-                st.rerun()
-            else: st.error("Code မှားနေပါသည်။")
+        if st.button("Verify") and st.text_input("Enter OTP") == st.session_state.gen_otp:
+            st.session_state.logged_in = True; st.rerun()
     st.stop()
 
-# --- ၄။ Main App (YouTube Recap & Voice) ---
-st.sidebar.success(f"📧 Login as: {st.session_state.user}")
-st.title("📽️ YouTube Movie Recap Pro")
+# --- ၅။ Dashboard (TeamAlpha Style Sidebar) ---
+st.sidebar.title("💎 TeamAlpha")
+menu = st.sidebar.radio("Menu", ["Dashboard", "Buy Credits", "Movie Processor", "Logout"])
 
-yt_url = st.text_input("YouTube Link ထည့်ပါ")
-if yt_url:
-    st.video(yt_url)
-    if st.button("Generate Recap"):
-        with st.spinner("AI က ဇာတ်လမ်းကို ပြန်ပြောပြနေသည်..."):
-            try:
-                res = model.generate_content(f"Summarize this movie from link: {yt_url}")
-                st.write(res.text)
-                st.success("ပြီးပါပြီ!")
-            except:
-                st.error("AI စနစ် ခေတ္တမအားလပ်ပါ။")
+if menu == "Buy Credits":
+    st.title("Choose Your Plan")
+    st.markdown("""
+    <div class="plan-card">
+        <h3>BASIC</h3>
+        <h1 style='color:#7e3ff2'>12,000 MMK</h1>
+        <p>⚡ 50 Credits</p>
+        <ul><li>Instant Crediting</li><li>Never Expires</li><li>Priority Support</li></ul>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("UPGRADE PLAN"): st.info("Contact Admin to pay via KPay.")
 
-# Voice Selection
-st.subheader("Narrator Selection")
-v_cols = st.columns(3)
-voices = {"မင်းမင်း": False, "တေဇ": False, "ချမ်းချမ်း": True}
-for i, (v, s) in enumerate(voices.items()):
-    with v_cols[i]:
-        if st.button(f"🔊 {v}"):
-            tts = gTTS(f"မင်္ဂလာပါ၊ ကျွန်တော် {v} ပါ။", lang='my', slow=s)
-            f = io.BytesIO(); tts.write_to_fp(f); st.audio(f)
+elif menu == "Movie Processor":
+    st.title("📽️ Studio Pro")
+    
+    # Advanced Settings
+    with st.expander("⚙️ Advanced Settings"):
+        col1, col2 = st.columns(2)
+        watermark = col1.text_input("Text Watermark", "MovieX")
+        col2.file_uploader("Logo (Optional)")
+        st.checkbox("Copyright Bypass", True)
+        st.checkbox("Auto Color")
+        st.checkbox("Flip Video")
+
+    yt_link = st.text_input("YouTube Link")
+    
+    if st.button("🚀 Start Processing"):
+        # Processing Graphic
+        st.subheader("PROCESSING")
+        c1, c2 = st.columns(2)
+        a_ui = c1.empty(); v_ui = c2.empty()
+        
+        for i in range(0, 101, 10):
+            a_ui.markdown(f"<div class='metric-container'><h3>{i}%</h3><p>AUDIO</p></div>", unsafe_allow_html=True)
+            v_ui.markdown(f"<div class='metric-container'><h3>{int(i*0.6)}%</h3><p>VIDEO</p></div>", unsafe_allow_html=True)
+            time.sleep(0.1)
+        
+        try:
+            res = model.generate_content(f"Summarize this: {yt_link}")
+            summary_text = res.text
+            st.success("Success!")
+            st.write(summary_text)
+            
+            # Text-to-Speech (အကုန်ဖတ်ပြမည့်အပိုင်း)
+            tts = gTTS(text=summary_text, lang='my')
+            f = io.BytesIO(); tts.write_to_fp(f)
+            st.audio(f, format='audio/mp3')
+            st.download_button("Download Audio", f, "recap.mp3")
+        except:
+            st.error("AI Busy. Try again.")
+
+elif menu == "Logout":
+    st.session_state.clear(); st.rerun()
