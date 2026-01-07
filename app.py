@@ -3,80 +3,84 @@ import google.generativeai as genai
 from gtts import gTTS
 import pandas as pd
 import io
-import os
+import smtplib
+import random
+from email.mime.text import MIMEText
 
-# Gemini API
-genai.configure(api_key="AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk")
+# --- ၁။ Configuration (သင့်အချက်အလက်များကို အသေထည့်သွင်းပေးထားပါသည်) ---
+GENAI_API_KEY = "AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk"
+SENDER_EMAIL = "cc3499395@gmail.com"  # သင့် Gmail
+APP_PASSWORD = "1234 5678 9123 4567"   # သင့် App Password
+# Sheet URL ကို လက်ရှိတွင် Default ထားပေးထားပါသည်
+SHEET_URL = "https://docs.google.com/spreadsheets/d/1vC-vH3P3X-xxxx/export?format=csv"
 
-# --- 1. Database Connection (Google Sheet) ---
-# သင့် Sheet Link ကို ဒီမှာ အစားထိုးပါ
-SHEET_URL = "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv"
+genai.configure(api_key=GENAI_API_KEY)
+model = genai.GenerativeModel('gemini-pro')
 
-def load_data():
-    try: return pd.read_csv(SHEET_URL)
-    except: return pd.DataFrame(columns=['username', 'password', 'credits'])
+# --- ၂။ Functions (OTP & Mail Sending) ---
+def send_otp_email(receiver_email, otp_code):
+    # Password ထဲက Space များကို ဖယ်ရှားခြင်း
+    formatted_pwd = APP_PASSWORD.replace(" ", "")
+    msg = MIMEText(f"မင်္ဂလာပါ၊ MovieX Pro သို့ဝင်ရန် သင်၏ Verification Code မှာ {otp_code} ဖြစ်ပါသည်။")
+    msg['Subject'] = 'MovieX OTP Code'
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = receiver_email
+    try:
+        server = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+        server.login(SENDER_EMAIL, formatted_pwd)
+        server.sendmail(SENDER_EMAIL, receiver_email, msg.as_string())
+        server.quit()
+        return True
+    except: return False
 
-# --- 2. Voice Models Settings ---
-voices = {
-    "မင်းမင်း": {"gender": "Male", "slow": False},
-    "တေဇ": {"gender": "Female", "slow": False},
-    "ချမ်းချမ်း": {"gender": "Female", "slow": True},
-    "အောင်အောင်": {"gender": "Male", "slow": False},
-    "စည်သူ": {"gender": "Male", "slow": True}
-}
-
-# UI Styling
+# --- ၃။ User Interface & Login System ---
 st.set_page_config(page_title="MovieX Recap Pro", layout="wide")
-st.markdown("<style>.stApp { background-color: #0F172A; color: white; }</style>", unsafe_allow_html=True)
 
-# --- 3. Login System ---
 if "logged_in" not in st.session_state:
     st.title("🎬 MovieX Premium Login")
-    u = st.text_input("Username")
-    p = st.text_input("Password", type="password")
-    if st.button("Sign In"):
-        df = load_data()
-        if u in df['username'].values and str(df[df['username'] == u]['password'].values[0]) == p:
-            st.session_state["logged_in"] = True
-            st.session_state["user"] = u
-            st.session_state["credits"] = int(df[df['username'] == u]['credits'].values[0])
-            st.rerun()
+    user_email = st.text_input("သင့် Gmail ကို ရိုက်ထည့်ပါ", placeholder="example@gmail.com")
+    
+    if st.button("Get OTP Code"):
+        if user_email:
+            otp = random.randint(100000, 999999)
+            st.session_state.gen_otp = str(otp)
+            if send_otp_email(user_email, otp):
+                st.session_state.otp_sent = True
+                st.session_state.target_email = user_email
+                st.success("Code ပို့ပြီးပါပြီ။ Gmail ကို စစ်ဆေးပါ။")
+            else: st.error("Email ပို့မရပါ။ Password အမှန်ကို ပြန်စစ်ပါ။")
+
+    if st.session_state.get("otp_sent"):
+        input_otp = st.text_input("OTP ၆ လုံး ရိုက်ထည့်ပါ", type="password")
+        if st.button("Verify & Start"):
+            if input_otp == st.session_state.gen_otp:
+                st.session_state.logged_in = True
+                st.session_state.user = st.session_state.target_email
+                st.session_state.credits = 100 # စမ်းသပ်ရန် Credit အပြည့်ပေးထားသည်
+                st.rerun()
+            else: st.error("Code မှားနေပါသည်။")
     st.stop()
 
-# --- 4. Main App Interface ---
-st.sidebar.title(f"👤 {st.session_state['user']}")
-st.sidebar.markdown(f"### 💳 Credits: **{st.session_state['credits']}**")
+# --- ၄။ Main App (YouTube & Voice) ---
+st.sidebar.success(f"📧 Login as: {st.session_state.user}")
+st.sidebar.info(f"💳 Credits: {st.session_state.credits}")
+st.title("📽️ YouTube Movie Recap Pro")
 
-st.title("🎙️ AI Narrator & Video Recap")
+yt_url = st.text_input("YouTube Link ထည့်ပါ")
+if yt_url:
+    st.video(yt_url)
+    if st.button("Generate Recap"):
+        with st.spinner("AI က ဇာတ်လမ်းကို ပြန်ပြောပြနေသည်..."):
+            res = model.generate_content(f"Summarize this: {yt_url}")
+            st.write(res.text)
+            st.success("ပြီးပါပြီ!")
 
-# Voice Cards Section
-st.subheader("Voice Selection (၅ Credits နုတ်ပါမည်)")
-v_cols = st.columns(5)
-if "selected_v" not in st.session_state: st.session_state["selected_v"] = "မင်းမင်း"
-
-for i, v_name in enumerate(voices.keys()):
+# Voice Over Selection
+st.subheader("Narrator Selection")
+voices = {"မင်းမင်း": False, "တေဇ": False, "ချမ်းချမ်း": True}
+v_cols = st.columns(3)
+for i, (v, s) in enumerate(voices.items()):
     with v_cols[i]:
-        st.markdown(f"<div style='background:#1E293B; padding:10px; border-radius:10px; text-align:center;'><b>{v_name}</b></div>", unsafe_allow_html=True)
-        if st.button(f"🔊 Listen", key=f"L_{v_name}"):
-            tts = gTTS(text=f"မင်္ဂလာပါ၊ ကျွန်တော် {v_name} ပါ။", lang='my', slow=voices[v_name]['slow'])
-            fp = io.BytesIO()
-            tts.write_to_fp(fp)
-            st.audio(fp)
-        if st.button(f"Select", key=f"S_{v_name}"):
-            st.session_state["selected_v"] = v_name
-
-st.info(f"လက်ရှိရွေးထားသော Narrator: **{st.session_state['selected_v']}**")
-
-# Video Processing
-video_url = st.text_input("YouTube URL")
-apply_flip = st.checkbox("↔️ Flip Video (Copyright Bypass)", value=True)
-
-if st.button("🚀 START PROCESSING"):
-    if st.session_state["credits"] >= 5:
-        with st.spinner("AI က ဗီဒီယိုကို လေ့လာပြီး အသံသွင်းနေပါသည်..."):
-            # Logic: Gemini Recap -> gTTS Voice -> Update Credit
-            st.session_state["credits"] -= 5
-            st.success("✅ အောင်မြင်ပါသည်။ ၅ Credits နုတ်ယူလိုက်ပါပြီ။")
-            # အသံဖိုင်နှင့် Video Output ကို ဒီနေရာတွင် ပြပေးပါမည်
-    else:
-        st.error("❌ Credit မလုံလောက်ပါ။ ကျေးဇူးပြု၍ ဖြည့်သွင်းပါ။")
+        if st.button(f"🔊 {v}"):
+            tts = gTTS(f"မင်္ဂလာပါ၊ ကျွန်တော် {v} ပါ။", lang='my', slow=s)
+            f = io.BytesIO(); tts.write_to_fp(f); st.audio(f)
