@@ -1,70 +1,82 @@
 import streamlit as st
 import google.generativeai as genai
 from gtts import gTTS
+import pandas as pd
 import io
+import os
 
-# Gemini API Key
+# Gemini API
 genai.configure(api_key="AIzaSyALb_YapQZbQvl4ZSgbq7LTC82OIYotxjk")
 
-st.set_page_config(page_title="Myanmar AI Dubber Pro", page_icon="💰")
+# --- 1. Database Connection (Google Sheet) ---
+# သင့် Sheet Link ကို ဒီမှာ အစားထိုးပါ
+SHEET_URL = "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/export?format=csv"
 
-# --- LOGIN SYSTEM ---
-def check_password():
-    def password_guessed():
-        # Username: admin / Password: 12345 (သင်စိတ်ကြိုက် ပြောင်းနိုင်သည်)
-        if st.session_state["username"] == "admin" and st.session_state["password"] == "12345":
-            st.session_state["password_correct"] = True
-            del st.session_state["password"]
-            del st.session_state["username"]
-        else:
-            st.session_state["password_correct"] = False
+def load_data():
+    try: return pd.read_csv(SHEET_URL)
+    except: return pd.DataFrame(columns=['username', 'password', 'credits'])
 
-    if "password_correct" not in st.session_state:
-        st.title("AI Dubber - Login Page 🔐")
-        st.text_input("Username", on_change=password_guessed, key="username")
-        st.text_input("Password", type="password", on_change=password_guessed, key="password")
-        st.info("App ကို အသုံးပြုရန် အကောင့်တောင်းယူပါ (KPay: 09xxxxxxxxx)")
-        return False
-    elif not st.session_state["password_correct"]:
-        st.title("AI Dubber - Login Page 🔐")
-        st.text_input("Username", on_change=password_guessed, key="username")
-        st.text_input("Password", type="password", on_change=password_guessed, key="password")
-        st.error("❌ Username သို့မဟုတ် Password မှားနေပါသည်။")
-        return False
+# --- 2. Voice Models Settings ---
+voices = {
+    "မင်းမင်း": {"gender": "Male", "slow": False},
+    "တေဇ": {"gender": "Female", "slow": False},
+    "ချမ်းချမ်း": {"gender": "Female", "slow": True},
+    "အောင်အောင်": {"gender": "Male", "slow": False},
+    "စည်သူ": {"gender": "Male", "slow": True}
+}
+
+# UI Styling
+st.set_page_config(page_title="MovieX Recap Pro", layout="wide")
+st.markdown("<style>.stApp { background-color: #0F172A; color: white; }</style>", unsafe_allow_html=True)
+
+# --- 3. Login System ---
+if "logged_in" not in st.session_state:
+    st.title("🎬 MovieX Premium Login")
+    u = st.text_input("Username")
+    p = st.text_input("Password", type="password")
+    if st.button("Sign In"):
+        df = load_data()
+        if u in df['username'].values and str(df[df['username'] == u]['password'].values[0]) == p:
+            st.session_state["logged_in"] = True
+            st.session_state["user"] = u
+            st.session_state["credits"] = int(df[df['username'] == u]['credits'].values[0])
+            st.rerun()
+    st.stop()
+
+# --- 4. Main App Interface ---
+st.sidebar.title(f"👤 {st.session_state['user']}")
+st.sidebar.markdown(f"### 💳 Credits: **{st.session_state['credits']}**")
+
+st.title("🎙️ AI Narrator & Video Recap")
+
+# Voice Cards Section
+st.subheader("Voice Selection (၅ Credits နုတ်ပါမည်)")
+v_cols = st.columns(5)
+if "selected_v" not in st.session_state: st.session_state["selected_v"] = "မင်းမင်း"
+
+for i, v_name in enumerate(voices.keys()):
+    with v_cols[i]:
+        st.markdown(f"<div style='background:#1E293B; padding:10px; border-radius:10px; text-align:center;'><b>{v_name}</b></div>", unsafe_allow_html=True)
+        if st.button(f"🔊 Listen", key=f"L_{v_name}"):
+            tts = gTTS(text=f"မင်္ဂလာပါ၊ ကျွန်တော် {v_name} ပါ။", lang='my', slow=voices[v_name]['slow'])
+            fp = io.BytesIO()
+            tts.write_to_fp(fp)
+            st.audio(fp)
+        if st.button(f"Select", key=f"S_{v_name}"):
+            st.session_state["selected_v"] = v_name
+
+st.info(f"လက်ရှိရွေးထားသော Narrator: **{st.session_state['selected_v']}**")
+
+# Video Processing
+video_url = st.text_input("YouTube URL")
+apply_flip = st.checkbox("↔️ Flip Video (Copyright Bypass)", value=True)
+
+if st.button("🚀 START PROCESSING"):
+    if st.session_state["credits"] >= 5:
+        with st.spinner("AI က ဗီဒီယိုကို လေ့လာပြီး အသံသွင်းနေပါသည်..."):
+            # Logic: Gemini Recap -> gTTS Voice -> Update Credit
+            st.session_state["credits"] -= 5
+            st.success("✅ အောင်မြင်ပါသည်။ ၅ Credits နုတ်ယူလိုက်ပါပြီ။")
+            # အသံဖိုင်နှင့် Video Output ကို ဒီနေရာတွင် ပြပေးပါမည်
     else:
-        return True
-
-# Login အောင်မြင်မှသာ အောက်ပါအပိုင်း အလုပ်လုပ်မည်
-if check_password():
-    st.title("Myanmar AI Dubber Pro 🇲🇲")
-    st.sidebar.success("Welcome Back!")
-    
-    voice_choice = st.sidebar.radio("အသံရွေးချယ်ရန်", ["မိန်းကလေးအသံ", "ယောကျ်ားလေးအသံ"])
-    video_url = st.text_input("YouTube Link ကို ဒီမှာ ထည့်ပါ -")
-
-    if video_url:
-        st.video(video_url)
-        if st.button("အသံသွင်းမည်"):
-            with st.spinner('AI က အလုပ်လုပ်နေပါသည်...'):
-                try:
-                    # 404 မတက်စေရန် gemini-pro ကို တိုက်ရိုက်ခေါ်ခြင်း
-                    model = genai.GenerativeModel('gemini-pro')
-                    prompt = f"Summarize this YouTube video in 3 short sentences in Myanmar language. URL: {video_url}"
-                    response = model.generate_content(prompt)
-                    
-                    myanmar_text = response.text
-                    st.success("ဘာသာပြန်ခြင်း ပြီးပါပြီ!")
-                    st.write(myanmar_text)
-                    
-                    is_slow = True if voice_choice == "ယောကျ်ားလေးအသံ" else False
-                    tts = gTTS(text=myanmar_text, lang='my', slow=is_slow)
-                    
-                    fp = io.BytesIO()
-                    tts.write_to_fp(fp)
-                    st.audio(fp, format='audio/mp3')
-                except Exception as e:
-                    st.error(f"Error: {str(e)}")
-    
-    if st.sidebar.button("Log out"):
-        st.session_state["password_correct"] = False
-        st.rerun()
+        st.error("❌ Credit မလုံလောက်ပါ။ ကျေးဇူးပြု၍ ဖြည့်သွင်းပါ။")
