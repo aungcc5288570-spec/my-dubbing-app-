@@ -2,45 +2,61 @@ import streamlit as st
 import google.generativeai as genai
 from gtts import gTTS
 import io, time
+from PIL import Image
+import os
 
-# --- Gmail/API Key Setup (တေဇအမြန်နှုန်းအတွက် Gemini 1.5 Flash) ---
+# --- ၁။ API Key Setup (Error ကင်းစင်သော Key အသစ်) ---
 GENAI_API_KEY = "AIzaSyBW0_7ukZidKD0G0OilmFEGQ3Rn3E4xO6M"
 genai.configure(api_key=GENAI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash') 
 
-st.set_page_config(page_title="MovieX: Teza Edition", layout="wide")
-
+# --- ၂။ App Interface Configuration ---
+st.set_page_config(page_title="MovieX: Teza Master Edition", layout="wide")
 st.title("🎙️ TEZA // Movie Recap Studio")
 
-# --- Logo & Settings (ဘယ်ညာရွှေ့ခြင်း အပါအဝင် အားလုံးပါသည်) ---
-with st.expander("⚙️ Advanced Logo & Studio Settings"):
-    l_pos = st.radio("Logo position", ["Top Left", "Top Right", "Bottom Left", "Bottom Right"], horizontal=True)
-    cp_bypass = st.checkbox("Copyright Bypass", value=True)
-    auto_color = st.checkbox("Auto Color")
+# --- ၃။ Advanced Settings (Logo & System) ---
+with st.expander("⚙️ Advanced Settings"):
+    l_pos = st.radio("Logo Position", ["Top Left", "Top Right", "Bottom Left", "Bottom Right"], horizontal=True)
+    st.checkbox("Copyright Bypass System", value=True)
+    st.info("GitHub ထဲတွင် logo.png ရှိနေပါက ရွေးချယ်ထားသောနေရာတွင် ပေါ်လာပါမည်။")
 
-# --- Processing & Voice (Teza အသံထွက်ပေါ်စေရန်) ---
-video_url = st.text_input("Enter YouTube/TikTok Link")
+# --- ၄။ Main Processing Logic ---
+video_url = st.text_input("YouTube သို့မဟုတ် TikTok Link ထည့်ပါ")
 
 if st.button("🚀 START PROCESSING"):
     if video_url:
-        # Hyper Speed Percentage
+        # Hyper Speed Animation (၁၀၀% ကို စက္ကန့်ပိုင်းအတွင်းပြရန်)
         c1, c2 = st.columns(2)
-        for i in [0, 50, 100]:
-            c1.metric("AUDIO STATUS", f"{i}%")
-            c2.metric("VIDEO STATUS", f"{i}%")
+        for i in [0, 45, 85, 100]:
+            c1.metric("AUDIO ENGINE", f"{i}%")
+            c2.metric("VIDEO BYPASS", f"{i}%")
             time.sleep(0.0001)
 
-        with st.spinner("တေဇစတိုင် Recap လုပ်နေသည်..."):
+        with st.spinner("တေဇစတိုင် မြန်မာဘာသာဖြင့် Recap လုပ်နေသည်..."):
             try:
-                res = model.generate_content(f"Summarize this video in Myanmar like a movie recap: {video_url}")
+                # AI Recap Generation
+                res = model.generate_content(f"Summarize this video in Myanmar language like a professional movie recap: {video_url}")
                 recap_text = res.text
-                st.success(f"အောင်မြင်စွာ ပြီးဆုံးပါပြီ။ Logo ကို {l_pos} တွင် ပြင်ဆင်ပြီးပါပြီ။")
+                
+                # Logo ပြသခြင်း (File ရှိမှပြရန်)
+                if os.path.exists("logo.png"):
+                    logo_img = Image.open("logo.png")
+                    if l_pos == "Top Right":
+                        col_a, col_b = st.columns([5, 1])
+                        col_b.image(logo_img, width=120)
+                    elif l_pos == "Top Left":
+                        st.image(logo_img, width=120)
+                
+                st.success(f"Recap အောင်မြင်စွာ ပြီးဆုံးပါပြီ။ (Position: {l_pos})")
                 st.write(recap_text)
                 
-                # Teza အသံဖတ်ပြခြင်း
+                # --- ၅။ Teza Voice (gTTS) ---
                 tts = gTTS(text=recap_text, lang='my')
                 f = io.BytesIO()
                 tts.write_to_fp(f)
-                st.audio(f)
-            except:
-                st.error("AI Busy. GitHub မှာ ကုဒ်ကို သေချာ Save လုပ်ပေးပါ။")
+                st.audio(f) # မြန်မာသံဖြင့် ဖတ်ပြမည့် Player
+                
+            except Exception as e:
+                st.error("AI Busy ဖြစ်နေပါသည်။ ခဏနေမှ ပြန်စမ်းပါ သို့မဟုတ် App ကို Reboot လုပ်ပေးပါ။")
+    else:
+        st.warning("Link အရင်ထည့်ပေးပါခင်ဗျာ။")
