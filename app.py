@@ -58,3 +58,13 @@ if st.button("🚀 Start Processing"):
                 st.error("AI Busy! Please reboot from Manage App.")
     else:
         st.warning("Please paste a link first.")
+# --- Logo & Watermark Section (၆၅ အောက်မှာ ဆက်ထည့်ရန်) ---
+with st.expander("🖼️ Logo & Name Setup"):
+    up_img = st.file_uploader("Upload Logo", type=['png', 'jpg'])
+    pos = st.selectbox("Position", ["Top Left", "Top Right", "Bottom Left", "Bottom Right"])
+    name = st.text_input("Brand Name", placeholder="e.g. MovieX")
+
+if up_img:
+    st.image(up_img, width=100, caption=f"Logo placed at {pos}")
+if name:
+    st.info(f"Watermark Name: {name}")
