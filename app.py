@@ -2,8 +2,7 @@ import streamlit as st
 import google.generativeai as genai
 from gtts import gTTS
 import io
-
-# API Setup (သင်ကိုယ်တိုင်ထုတ်ထားတဲ့ Key အသစ်)
+API Setup (သင်ကိုယ်တိုင်ထုတ်ထားတဲ့ Key အသစ်)
 API_KEY = "AIzaSyDJJWLnbivz88L3U20WgPzSFk2i28LIHOc" 
 genai.configure(api_key=API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash') 
