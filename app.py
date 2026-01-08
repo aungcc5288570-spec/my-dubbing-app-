@@ -1,62 +1,60 @@
 import streamlit as st
 import google.generativeai as genai
-from gtts import gTTSက
+from gtts import gTTS
 import io, time
-from PIL import Image
-import os
 
-# --- ၁။ API Key Setup (Error ကင်းစင်သော Key အသစ်) ---
+# --- API Setup ---
 GENAI_API_KEY = "AIzaSyBW0_7ukZidKD0G0OilmFEGQ3Rn3E4xO6M"
 genai.configure(api_key=GENAI_API_KEY)
 model = genai.GenerativeModel('gemini-1.5-flash') 
 
-# --- ၂။ App Interface Configuration ---
-st.set_page_config(page_title="MovieX: Teza Master Edition", layout="wide")
-st.title("🎙️ TEZA // Movie Recap Studio")
+# --- UI Styling (TeamAlpha Look) ---
+st.set_page_config(page_title="TEAM ALPHA // MovieX", layout="centered")
+st.markdown("""
+    <style>
+    .main { background-color: #0e1117; color: white; }
+    .stButton>button { width: 100%; border-radius: 20px; background-color: #00d2ff; color: black; font-weight: bold; }
+    .credit-box { background-color: #1e222d; padding: 10px; border-radius: 10px; text-align: right; margin-bottom: 20px; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# --- ၃။ Advanced Settings (Logo & System) ---
-with st.expander("⚙️ Advanced Settings"):
-    l_pos = st.radio("Logo Position", ["Top Left", "Top Right", "Bottom Left", "Bottom Right"], horizontal=True)
-    st.checkbox("Copyright Bypass System", value=True)
-    st.info("GitHub ထဲတွင် logo.png ရှိနေပါက ရွေးချယ်ထားသောနေရာတွင် ပေါ်လာပါမည်။")
+# --- Top Bar (Credits Section) ---
+st.markdown('<div class="credit-box"><b>STATUS:</b> TRIAL | <b>CREDITS:</b> 999+</div>', unsafe_allow_html=True)
+st.title("🎬 TEAM ALPHA // Studio")
 
-# --- ၄။ Main Processing Logic ---
-video_url = st.text_input("YouTube သို့မဟုတ် TikTok Link ထည့်ပါ")
+# --- Register/Login Preview ---
+with st.expander("👤 User Account (Trial Mode)"):
+    st.text_input("Display Name", value="Guest User", disabled=True)
+    st.info("You are currently using 10 free trial credits.")
 
-if st.button("🚀 START PROCESSING"):
+# --- Input & Preview Section ---
+video_url = st.text_input("Enter YouTube URL", placeholder="https://youtube.com/...")
+
+if video_url:
+    st.video(video_url) # Video Preview ပေါ်လာစေရန်
+
+# --- Settings ---
+with st.expander("⚙️ Advanced Alpha Settings"):
+    st.selectbox("Target Language", ["Burmese (မြန်မာ)", "English"])
+    st.checkbox("Copyright Bypass", value=True)
+    st.checkbox("Auto Color Correction", value=False)
+
+# --- Process Button ---
+if st.button("🚀 Start Processing"):
     if video_url:
-        # Hyper Speed Animation (၁၀၀% ကို စက္ကန့်ပိုင်းအတွင်းပြရန်)
-        c1, c2 = st.columns(2)
-        for i in [0, 45, 85, 100]:
-            c1.metric("AUDIO ENGINE", f"{i}%")
-            c2.metric("VIDEO BYPASS", f"{i}%")
-            time.sleep(0.0001)
-
-        with st.spinner("တေဇစတိုင် မြန်မာဘာသာဖြင့် Recap လုပ်နေသည်..."):
+        with st.spinner("Alpha AI is generating recap..."):
             try:
-                # AI Recap Generation
-                res = model.generate_content(f"Summarize this video in Myanmar language like a professional movie recap: {video_url}")
+                res = model.generate_content(f"Summarize this video in Myanmar language: {video_url}")
                 recap_text = res.text
-                
-                # Logo ပြသခြင်း (File ရှိမှပြရန်)
-                if os.path.exists("logo.png"):
-                    logo_img = Image.open("logo.png")
-                    if l_pos == "Top Right":
-                        col_a, col_b = st.columns([5, 1])
-                        col_b.image(logo_img, width=120)
-                    elif l_pos == "Top Left":
-                        st.image(logo_img, width=120)
-                
-                st.success(f"Recap အောင်မြင်စွာ ပြီးဆုံးပါပြီ။ (Position: {l_pos})")
+                st.subheader("PREVIEW RECAP")
                 st.write(recap_text)
                 
-                # --- ၅။ Teza Voice (gTTS) ---
+                # Voice
                 tts = gTTS(text=recap_text, lang='my')
                 f = io.BytesIO()
                 tts.write_to_fp(f)
-                st.audio(f) # မြန်မာသံဖြင့် ဖတ်ပြမည့် Player
-                
-            except Exception as e:
-                st.error("AI Busy ဖြစ်နေပါသည်။ ခဏနေမှ ပြန်စမ်းပါ သို့မဟုတ် App ကို Reboot လုပ်ပေးပါ။")
+                st.audio(f)
+            except Exception:
+                st.error("AI Busy! Please reboot from Manage App.")
     else:
-        st.warning("Link အရင်ထည့်ပေးပါခင်ဗျာ။")
+        st.warning("Please paste a link first.")
