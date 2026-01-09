@@ -4,40 +4,51 @@ from gtts import gTTS
 import io
 
 # API Key ကို တိုက်ရိုက်ထည့်သွင်းထားသည်
-genai.configure(api_key="AIzaSyDJJWLnbivz88L3U20WgPzSFk2i28LIHOc")
+API_KEY = "AIzaSyDJJWLnbivz88L3U20WgPzSFk2i28LIHOc"
+genai.configure(api_key=API_KEY)
 
-# Model နာမည်ကို Error မတက်အောင် ဤသို့ပြောင်းလဲထားသည်
-model = genai.GenerativeModel('gemini-1.5-flash-latest') 
+# Error: 404 ကိုဖြေရှင်းရန် Model နာမည်ကို 'gemini-1.5-flash' ဟု အတိအကျပြောင်းထားသည်
+model = genai.GenerativeModel('gemini-1.5-flash') 
 
-st.title("🎬 TEAM ALPHA // STUDIO")
+st.set_page_config(page_title="TEAM ALPHA STUDIO", layout="wide")
 
-# Sidebar တွင် Branding ပြုလုပ်ရန်
+# --- ဘေးဘက်တွင် Logo နှင့် အမည်သတ်မှတ်ရန် ---
 with st.sidebar:
-    st.header("⚙️ Branding Settings")
-    watermark = st.text_input("ဗီဒီယိုပေါ်တွင်ပြလိုသော အမည်", value="TEAM ALPHA STUDIO")
-    uploaded_logo = st.file_uploader("Logo ပုံတင်ရန်", type=['png', 'jpg'])
+    st.title("⚙️ Branding")
+    watermark = st.text_input("ပြသလိုသောအမည်", value="TEAM ALPHA STUDIO")
+    logo_file = st.file_uploader("Logo ပုံတင်ရန်", type=['png', 'jpg', 'jpeg'])
+    st.info("တေဇအသံစနစ်ကို အလိုအလျောက် သတ်မှတ်ထားပါသည်။")
 
-video_url = st.text_input("🔗 YouTube Link (Shorts or Video)")
+# --- ပင်မစာမျက်နှာ ---
+st.title("🎬 TEAM ALPHA // STUDIO")
+video_url = st.text_input("🔗 YouTube Link (Shorts သို့မဟုတ် ဗီဒီယိုအရှည်)", placeholder="ဒီမှာ Link ထည့်ပါ...")
 
 if st.button("🚀 Start Processing"):
     if video_url:
-        with st.spinner("Processing..."):
+        with st.spinner("AI က ဗီဒီယိုကို လေ့လာနေသည်..."):
             try:
-                # Video ကို AI က လေ့လာခြင်း
-                res = model.generate_content(f"Summarize this video in Myanmar language: {video_url}")
+                # ဗီဒီယိုကို မြန်မာလို အနှစ်ချုပ်ခိုင်းခြင်း
+                prompt = f"Summarize this video professionally in Myanmar language: {video_url}"
+                res = model.generate_content(prompt)
                 
-                st.subheader(f"📜 အနှစ်ချုပ်စာသား ({watermark})")
+                # ရလဒ်များကို ပြသခြင်း
+                st.subheader(f"📺 Output for {watermark}")
+                if logo_file:
+                    st.image(logo_file, width=150)
+                
                 st.write(res.text)
                 
-                # တေဇအသံ (Teza Voice Style) ထုတ်ပေးခြင်း
-                tts = gTTS(text=res.text, lang='my')
-                audio_file = io.BytesIO()
-                tts.write_to_fp(audio_file)
-                st.audio(audio_file)
-                st.success("အောင်မြင်စွာ လုပ်ဆောင်ပြီးပါပြီ!")
+                # တေဇအသံ (Teza Voice) ထုတ်ပေးခြင်း
+                st.subheader("🎙️ AI Voiceover (တေဇအသံ)")
+                tts = gTTS(text=res.text, lang='my', slow=False)
+                audio_io = io.BytesIO()
+                tts.write_to_fp(audio_io)
+                st.audio(audio_io)
+                
+                st.success("✅ အကုန်လုံး အဆင်ပြေစွာ လုပ်ဆောင်ပြီးပါပြီ!")
                 
             except Exception as e:
-                # Error အမှန်ကို ပြပေးရန်
-                st.error(f"Error: {str(e)}")
+                # Error တက်ပါက ဘာကြောင့်လဲဆိုတာကို ရှင်းလင်းစွာ ပြပေးမည်
+                st.error(f"နည်းပညာပိုင်းဆိုင်ရာ အခက်အခဲ: {str(e)}")
     else:
-        st.warning("Link ထည့်ပေးရန် လိုအပ်ပါသည်။")
+        st.warning("ကျေးဇူးပြု၍ YouTube Link အရင်ထည့်ပေးပါ။")
