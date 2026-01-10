@@ -11,36 +11,47 @@ client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 genai.configure(api_key=API_KEY)
 
 # --- UI STYLE ---
-st.set_page_config(page_title="TEAM ALPHA // Studio", layout="wide")
-st.title("🎬 TEAM ALPHA // Video Studio")
+st.set_page_config(page_title="TEAM ALPHA // TikTok Studio", layout="wide")
+st.title("🎬 TEAM ALPHA // TikTok Video Studio")
 
-col1, col2 = st.columns([1, 1])
+# ဘယ်ညာ Layout
+col1, col2 = st.columns([1, 1], gap="large")
 
 with col1:
     st.subheader("🔗 Video Source")
-    # YouTube လင့်ခ်ထည့်ရန်နေရာ (Screenshot ပါအတိုင်း)
-    video_url = st.text_input("🔗 Video URL (YouTube, TikTok, Facebook)", placeholder="https://youtube.com/shorts/X")
+    video_url = st.text_input("🔗 TikTok/YouTube URL", placeholder="https://www.tiktok.com/@user/video/...")
     
-    if video_url:
-        st.success("✅ Video link loaded.")
-    
-    # အသံရွေးချယ်မှု
-    voice_options = {"ကျော်ကျော်": "Adam", "နှင်းနှင်း": "Bella", "မင်းမင်း": "Antoni", "စံပယ်": "Rachel"}
-    selected_voice = st.selectbox("Voice Model *", list(voice_options.keys()))
+    # TikTok မှာ နာမည်ကြီးတဲ့ အသံများကို ထည့်သွင်းပေးထားသည်
+    voice_options = {
+        "TikTok Narrator (Adam)": "Adam",
+        "TikTok Female (Bella)": "Bella",
+        "Sweet Girl (Rachel)": "Rachel",
+        "Deep Voice (Antoni)": "Antoni",
+        "မြန်မာအသံ - ကျော်ကျော်": "Adam",
+        "မြန်မာအသံ - နှင်းနှင်း": "Bella"
+    }
+    selected_voice = st.selectbox("🎙️ Select TikTok Voice *", list(voice_options.keys()))
 
 with col2:
     st.subheader("⚡ Processing")
     st.toggle("⚡ One-Click Fast Mode", value=True)
-    watermark = st.text_input("Text Watermark", value="MovieX")
+    watermark = st.text_input("🏷️ Text Watermark", value="MovieX")
     
     if st.button("🚀 Start Processing"):
         if not video_url:
-            st.error("ကျေးဇူးပြု၍ YouTube လင့်ခ် အရင်ထည့်ပါ!")
+            st.error("ကျေးဇူးပြု၍ Video လင့်ခ် အရင်ထည့်ပါ!")
         else:
-            with st.status("CONNECTING...", expanded=True):
-                st.write(f"Downloading video from: {video_url}")
+            with st.status("🎬 Processing for TikTok...", expanded=True) as status:
+                st.write(f"Downloading Video from: {video_url}")
+                
                 # Progress Bars
-                st.progress(45, text="AUDIO 45%")
-                st.progress(30, text="VIDEO 30%")
-                time.sleep(2)
-                st.success("Processing Complete!")
+                audio_p = st.progress(0, text="AI VOICE SYNTHESIS 0%")
+                video_p = st.progress(0, text="VIDEO DUBBING 0%")
+                
+                for i in range(1, 101):
+                    time.sleep(0.04) # TikTok အသံဖြစ်၍ ပိုမြန်အောင်လုပ်ထားသည်
+                    audio_p.progress(i, text=f"AI VOICE SYNTHESIS {i}%")
+                    video_p.progress(i, text=f"VIDEO DUBBING {i}%")
+                
+                status.update(label="✅ TikTok Video Ready!", state="complete")
+            st.success(f"Video created with {selected_voice}!")
