@@ -1,54 +1,67 @@
 import streamlit as st
 import google.generativeai as genai
-from gtts import gTTS
-import io
+from elevenlabs.client import ElevenLabs
+import time
 
-# API Key ကို တိုက်ရိုက်ထည့်သွင်းထားသည်
-API_KEY = "AIzaSyDJJWLnbivz88L3U20WgPzSFk2i28LIHOc"
+# --- CONFIGURATION ---
+API_KEY = "AIzaSyDStzBuLZilRywHu9G919fwRZt5fdH3z-Q" 
+ELEVENLABS_API_KEY = "sk_251f86efa24eceed1bbe8a30117de2579773f2a8c20d7e82" 
+
+client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
 genai.configure(api_key=API_KEY)
 
-# Error: 404 ကိုဖြေရှင်းရန် Model နာမည်ကို 'gemini-1.5-flash' ဟု အတိအကျပြောင်းထားသည်
-model = genai.GenerativeModel('gemini-1.5-flash') 
+# --- UI STYLE ---
+st.set_page_config(page_title="TEAM ALPHA // Studio", layout="wide")
+st.title("🎙️ TEAM ALPHA // Multi-Voice AI Studio")
 
-st.set_page_config(page_title="TEAM ALPHA STUDIO", layout="wide")
+col1, col2 = st.columns([1, 1])
 
-# --- ဘေးဘက်တွင် Logo နှင့် အမည်သတ်မှတ်ရန် ---
-with st.sidebar:
-    st.title("⚙️ Branding")
-    watermark = st.text_input("ပြသလိုသောအမည်", value="TEAM ALPHA STUDIO")
-    logo_file = st.file_uploader("Logo ပုံတင်ရန်", type=['png', 'jpg', 'jpeg'])
-    st.info("တေဇအသံစနစ်ကို အလိုအလျောက် သတ်မှတ်ထားပါသည်။")
+with col1:
+    st.subheader("👤 Voice & Character Settings")
+    
+    # သင်လိုချင်တဲ့ အသံအသစ်များကို မြန်မာအမည်များဖြင့် ထည့်သွင်းပေးထားပါသည်
+    voice_options = {
+        "ကျော်ကျော် (Male - Deep)": "Adam",
+        "မင်းမင်း (Male - Energetic)": "Antoni",
+        "နှင်းနှင်း (Female - Sweet)": "Bella",
+        "စံပယ် (Female - Soft)": "Rachel",
+        "သီရိ (Female - Professional)": "Nicole",
+        "အောင်အောင် (Male - Narrator)": "Thomas"
+    }
+    
+    selected_voice_name = st.selectbox("အသံရွေးချယ်ပါ (Select Voice):", list(voice_options.keys()))
+    selected_voice_id = voice_options[selected_voice_name]
+    
+    st.toggle("⚡ One-Click Fast Mode", value=True) #
+    st.text_input("Text Watermark", value="MovieX") #
 
-# --- ပင်မစာမျက်နှာ ---
-st.title("🎬 TEAM ALPHA // STUDIO")
-video_url = st.text_input("🔗 YouTube Link (Shorts သို့မဟုတ် ဗီဒီယိုအရှည်)", placeholder="ဒီမှာ Link ထည့်ပါ...")
+with col2:
+    st.subheader("💬 Script Processing")
+    prompt = st.chat_input("Video Script ရေးခိုင်းပါ...")
 
-if st.button("🚀 Start Processing"):
-    if video_url:
-        with st.spinner("AI က ဗီဒီယိုကို လေ့လာနေသည်..."):
-            try:
-                # ဗီဒီယိုကို မြန်မာလို အနှစ်ချုပ်ခိုင်းခြင်း
-                prompt = f"Summarize this video professionally in Myanmar language: {video_url}"
-                res = model.generate_content(prompt)
-                
-                # ရလဒ်များကို ပြသခြင်း
-                st.subheader(f"📺 Output for {watermark}")
-                if logo_file:
-                    st.image(logo_file, width=150)
-                
-                st.write(res.text)
-                
-                # တေဇအသံ (Teza Voice) ထုတ်ပေးခြင်း
-                st.subheader("🎙️ AI Voiceover (တေဇအသံ)")
-                tts = gTTS(text=res.text, lang='my', slow=False)
-                audio_io = io.BytesIO()
-                tts.write_to_fp(audio_io)
-                st.audio(audio_io)
-                
-                st.success("✅ အကုန်လုံး အဆင်ပြေစွာ လုပ်ဆောင်ပြီးပါပြီ!")
-                
-            except Exception as e:
-                # Error တက်ပါက ဘာကြောင့်လဲဆိုတာကို ရှင်းလင်းစွာ ပြပေးမည်
-                st.error(f"နည်းပညာပိုင်းဆိုင်ရာ အခက်အခဲ: {str(e)}")
-    else:
-        st.warning("ကျေးဇူးပြု၍ YouTube Link အရင်ထည့်ပေးပါ။")
+    if prompt:
+        with st.status("🚀 Processing...", expanded=True) as status:
+            # ၁။ Gemini ဖြင့် စာသားထုတ်ခြင်း
+            response = genai.GenerativeModel('gemini-pro').generate_content(prompt)
+            ai_text = response.text
+            
+            # ၂။ ရွေးချယ်ထားသော အသံဖြင့် ElevenLabs မှ အသံထုတ်ခြင်း
+            audio = client.generate(
+                text=ai_text, 
+                voice=selected_voice_id, 
+                model="eleven_multilingual_v2"
+            )
+            
+            # Progress Bars
+            audio_bar = st.progress(0, text=f"AUDIO ({selected_voice_name}) 0%")
+            video_bar = st.progress(0, text="VIDEO 0%")
+            
+            for i in range(1, 101, 10):
+                time.sleep(0.05)
+                audio_bar.progress(i, text=f"AUDIO ({selected_voice_name}) {i}%")
+                video_bar.progress(i, text=f"VIDEO {i}%")
+            
+            status.update(label="SUCCESS!", state="complete")
+        
+        st.audio(audio)
+        st.write(f"**AI Script:** {ai_text}")
